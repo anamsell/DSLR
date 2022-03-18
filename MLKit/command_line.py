@@ -1,5 +1,6 @@
 import sys
-import MLKit
+from . import display
+
 
 class CommandLine:
 
@@ -38,7 +39,7 @@ class CommandLine:
     @staticmethod
     def get_file_name():
         if len(sys.argv) < 2:
-            MLKit.Display.error("Should take one argument.")
+            display.error("Should take one argument.")
         
         return sys.argv[1]
     
@@ -58,7 +59,7 @@ class CommandLine:
     def get_value_for_flag(flag_name):
         """Returns the values for a flag in the executable arguments."""
         if not CommandLine.is_flag_registered(flag_name):
-            MLKit.Display.error("Flag -" + flag_name + " doesn't exist.")
+            display.error("Flag -" + flag_name + " doesn't exist.")
 
         flag = CommandLine.__flags.get(flag_name)
         args = sys.argv
@@ -66,7 +67,7 @@ class CommandLine:
         values = []
 
         if flag is None:
-            MLKit.Display.error("Flag -" + flag_name + " is not registered.")
+            display.error("Flag -" + flag_name + " is not registered.")
 
         for arg in args:
             if current_flag is None:
@@ -81,11 +82,11 @@ class CommandLine:
         
         if current_flag is None:
             if CommandLine.__flags[flag_name].is_required:
-                MLKit.Display.error("Flag -" + flag_name + " is required.")
+                display.error("Flag -" + flag_name + " is required.")
             return CommandLine.__flags[flag_name].default_value
         
         if current_flag.require_parameters and len(values) == 0:
-            MLKit.Display.error("Flag -" + flag_name + " requires parameters.")
+            display.error("Flag -" + flag_name + " requires parameters.")
         
         return values if current_flag.has_multiple_values else values[0]
                 

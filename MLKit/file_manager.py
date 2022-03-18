@@ -1,4 +1,4 @@
-import MLKit
+from . import display
 import csv
 import json
 
@@ -7,7 +7,7 @@ def fd(file_name, option):
     try:
         return open(file_name, option)
     except IOError:
-        MLKit.Display.error("No such file named " + file_name)
+        display.error("No such file named " + file_name)
 
 
 def get_content_of_file(file_name):
@@ -34,7 +34,7 @@ def get_csv_data(file_content, delimiter=","):
                 else:
                     columns[key].append(value)
             except TypeError:
-                MLKit.Display.error("The file is not correctly formated.")
+                display.error("The file is not correctly formated.")
 
     return columns
 

@@ -6,7 +6,7 @@ if __name__ == "__main__":
 
     MLKit.CommandLine.register_flag("X", description="The features to display.", default_value=defaut_features, has_multiple_values=True)
     MLKit.CommandLine.register_flag("Y", description="The target column of the values to display.", default_value=default_target_column)
-    MLKit.CommandLine.register_usage("logreg_train.py [csv_file_name]\nDisplay a pair plot of a csv data set.")
+    MLKit.CommandLine.register_usage("log_reg_train.py [csv_file_name]\nDisplay a pair plot of a csv data set.")
     MLKit.CommandLine.show_usage_if_needed()
 
     file_name = MLKit.CommandLine.get_argument_at_index(1)

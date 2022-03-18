@@ -1,6 +1,6 @@
+from . import display
 from enum import Enum
 import math
-import MLKit
 
 
 class ColumnAttributes:
@@ -27,7 +27,6 @@ class ColumnAttributes:
             elif column_type == ColumnAttributes.Type.numeric:
                 return "Numeric"
             return None
-            
 
     def __init__(self, column):
         self.count = 0
@@ -46,11 +45,11 @@ class ColumnAttributes:
         values_sum = 0
 
         for value in column.values:
-            if value == None:
+            if value is None:
                 continue
 
             if not self.__is_type_correct_for_value(value):
-                MLKit.Display.warning("Column " + column.name + " contains different value types.")
+                display.warning("Column " + column.name + " contains different value types.")
                 self.minimum = None
                 self.maximum = None
                 return
@@ -83,7 +82,7 @@ class ColumnAttributes:
         sorted_values = sorted(replaced_values)
 
         for (index, value) in enumerate(sorted_values):
-            if value == None:
+            if value is None:
                 continue
 
             squared_sum += (self.mean - value) ** 2
@@ -99,12 +98,12 @@ class ColumnAttributes:
         self.std = math.sqrt(variance)
     
     def __is_type_correct_for_value(self, value):
-        if value == None:
+        if value is None:
             return True
         
         if self.type == ColumnAttributes.Type.string and value == "Nan":
             return True
-        elif self.type == None:
+        elif self.type is None:
             self.type = ColumnAttributes.Type.type_of_value(value)
             return True
         elif self.type == ColumnAttributes.Type.type_of_value(value):
@@ -113,10 +112,10 @@ class ColumnAttributes:
             return False
         
     def __transform_value_to_numeric_if_needed(self, value):
-        if value == None or self.type == ColumnAttributes.Type.numeric:
+        if value is None or self.type == ColumnAttributes.Type.numeric:
             return
         
-        if self.numeric_values.get(value) == None:
+        if self.numeric_values.get(value) is None:
             self.numeric_values[value] = len(self.numeric_values.keys())
     
     def numeric_value_for_value(self, value):

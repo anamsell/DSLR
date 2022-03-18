@@ -1,4 +1,8 @@
-import MLKit
+from . import file_manager
+from . import column
+from . import logistic_regression
+from . import column_attributes
+from . import display
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -14,15 +18,19 @@ class DataTable:
 
     def __init__(self, file_name):
         self.file_name = file_name
-        file_content = MLKit.FileManager.get_content_of_file(file_name)
-        columns_dict = MLKit.FileManager.get_csv_data(file_content)
+        file_content = file_manager.get_content_of_file(file_name)
+        columns_dict = file_manager.get_csv_data(file_content)
 
         self.__columns = {}
         self.train_conditions = None
+        self.X = None
+        self.Y = None
+        self.splitted_X = None
+        self.splitted_Y = None
 
         for (name, values) in columns_dict.items():
-            column = MLKit.Column(name, values)
-            self.__columns[name] = column
+            col = column.Column(name, values)
+            self.__columns[name] = col
 
     def __str__(self):
         self.display_attributes()
@@ -42,20 +50,21 @@ class DataTable:
         column = self.column_named(column_name)
 
         if column is None:
-            MLKit.Display.warning("No such column named " + column_name + " in this data table.")
+            display.warning("No such column named " + column_name + " in this data table.")
             return []
         else:
             return column.values
 
     def values_for_target_column_named(self, column_name, value_names, target_column_names, scaled=False):
-        """Return a dictionnary of all the values in a target column, corresponding to the row values of a given column."""
+        """Return a dictionnary of all the values in a target column, corresponding to the row values of a given
+        column. """
         column = self.column_named(column_name)
         value_names = list(map(str, value_names))
         target_column_names = list(map(str, target_column_names))
         values = {}
 
         if column is None:
-            MLKit.Display.error("Column " + column_name + " doesn't exists.")
+            display.error("Column " + column_name + " doesn't exists.")
 
         for index, value in enumerate(column.values):
             value_str = str(value)
@@ -70,7 +79,7 @@ class DataTable:
 
                     target_column = self.column_named(target_column_name)
                     if target_column is None:
-                        MLKit.Display.error("Column " + target_column_name + " doesn't exists.")
+                        display.error("Column " + target_column_name + " doesn't exists.")
 
                     if scaled is True:
                         try:
@@ -101,11 +110,11 @@ class DataTable:
 
                 for feature_column_name in feature_column_names:
                     feature_column = self.column_named(feature_column_name)
-                    if feature_column.values[target_column_index] == None:
+                    if feature_column.values[target_column_index] is None:
                         row_contains_none = True
                         break
 
-                if row_contains_none == True:
+                if row_contains_none:
                     continue
 
                 row_columns = {}
@@ -118,17 +127,16 @@ class DataTable:
                         float_value = float(feature_column_value)
                         row_columns[feature_column_name] = float_value
                     except TypeError:
-                        MLKit.Display.error("Value for column " + feature_column_name + " should be numeric.")
+                        display.error("Value for column " + feature_column_name + " should be numeric.")
 
                 data[row_name].append(row_columns)
 
         return data
 
-    def compute_columns_attributes(self, model = None):
+    def compute_columns_attributes(self, model=None):
         """Compute the attributes of each column."""
         for column in self.__columns.values():
             column.compute_attributes(model)
-
 
     def set_train_condition(self, target_column_name, features_column_names):
         """Define the feature columns that will be used for train based on the row values of the target column."""
@@ -136,7 +144,7 @@ class DataTable:
         row_names = []
 
         for row_value in target_column.values:
-            if not row_value in row_names:
+            if row_value not in row_names:
                 row_names.append(row_value)
 
         for row_name in row_names:
@@ -151,17 +159,17 @@ class DataTable:
 
     def train(self, target_column_name, features_column_names, file_name, learning_rate=0.1, accuracy_split=None):
         if not 1 >= learning_rate > 0:
-            MLKit.Display.error("Learning rate should be greater than 0 and smaller than 1.")
+            display.error("Learning rate should be greater than 0 and smaller than 1.")
 
         if accuracy_split is not None and (accuracy_split <= 0 or accuracy_split >= 1):
-            MLKit.Display.error("Accuracy split should be greater than 0 and smaller than 1.")
+            display.error("Accuracy split should be greater than 0 and smaller than 1.")
 
         if self.column_named(target_column_name) is None:
-            MLKit.Display.error("Column " + target_column_name + " doesn't exists.")
+            display.error("Column " + target_column_name + " doesn't exists.")
 
         for feature_column_name in features_column_names:
             if self.column_named(feature_column_name) is None:
-                MLKit.Display.error("Column " + feature_column_name + " doesn't exists.")
+                display.error("Column " + feature_column_name + " doesn't exists.")
 
         target_column = self.column_named(target_column_name)
         feature_columns = [self.column_named(column_name) for column_name in list(self.__columns.keys()) if
@@ -182,13 +190,13 @@ class DataTable:
 
         self.X = united_values[:, :-1].astype('float').T
         self.Y = united_values[:, -1:].reshape(len(X))
-        self.splited_X = None
-        self.splited_Y = None
+        self.splitted_X = None
+        self.splitted_Y = None
         self.splited_test_X = None
         self.splited_test_Y = None
 
         if accuracy_split is None:
-            regression = MLKit.LogisticRegression(learning_rate)
+            regression = logistic_regression.LogisticRegression(learning_rate)
             for index, val in enumerate(features_column_names):
                 regression.mean[val] = np.mean(self.X[index])
                 regression.std[val] = np.std(self.X[index])
@@ -196,26 +204,26 @@ class DataTable:
             regression.fit(self.X, self.Y, feature_names)
             regression.save(file_name)
         else:
-            self.splited_X = self.X[:, :int(self.X.shape[1] * accuracy_split)]
-            self.splited_Y = self.Y[:int(self.Y.shape[0] * accuracy_split)]
+            self.splitted_X = self.X[:, :int(self.X.shape[1] * accuracy_split)]
+            self.splitted_Y = self.Y[:int(self.Y.shape[0] * accuracy_split)]
             self.splited_test_X = self.X[:, int(self.X.shape[1] * accuracy_split):]
             self.splited_test_Y = self.Y[int(self.Y.shape[0] * accuracy_split):]
-            regression = MLKit.LogisticRegression(learning_rate)
+            regression = logistic_regression.LogisticRegression(learning_rate)
             for index, val in enumerate(features_column_names):
                 regression.mean[val] = np.mean(self.splited_test_X[index])
                 regression.std[val] = np.std(self.splited_test_X[index])
-                self.splited_X[index] = (self.splited_X[index] - regression.mean[val]) / regression.std[val]
+                self.splitted_X[index] = (self.splitted_X[index] - regression.mean[val]) / regression.std[val]
                 self.splited_test_X[index] = (self.splited_test_X[index] - regression.mean[val]) / regression.std[val]
-            regression.fit(self.splited_X, self.splited_Y, feature_names)
+            regression.fit(self.splitted_X, self.splitted_Y, feature_names)
             regression.save(file_name)
 
-        MLKit.Display.success("model saved as " + file_name + ".mlmodel")
+        display.success("model saved as " + file_name + ".mlmodel")
     
     def accuracy(self, model_file_name):
-        if self.splited_X is None or self.splited_Y is None or self.splited_test_X is None or self.splited_test_Y is None:
-            MLKit.Display.error("Use -a to get the model accuracy.")
+        if self.splitted_X is None or self.splitted_Y is None or self.splited_test_X is None or self.splited_test_Y is None:
+            display.error("Use -a to get the model accuracy.")
         
-        model = MLKit.FileManager.get_model_data(model_file_name + ".mlmodel")
+        model = file_manager.get_model_data(model_file_name + ".mlmodel")
         feature_column_names = list(model["rows"][list(model["rows"].keys())[0]].keys())
         predicted_values = []
 
@@ -233,17 +241,17 @@ class DataTable:
         feature_columns = [self.column_named(column_name) for column_name in feature_column_names]
 
         if self.column_named(target_column_name) is None:
-            MLKit.Display.error("Column " + target_column_name + " doesn't exists.")
+            display.error("Column " + target_column_name + " doesn't exists.")
 
         for feature_column_name in feature_column_names:
             if self.column_named(feature_column_name) is None:
-                MLKit.Display.error("Column " + feature_column_name + " doesn't exists.")
+                display.error("Column " + feature_column_name + " doesn't exists.")
 
         X = np.array([column.scaled_values for column in feature_columns])
         for row_index in range(X.shape[1]):
             target_column.values[row_index] = self.__predcited_value(X, row_index, feature_column_names, model)
 
-        MLKit.Display.success("Predicted values")
+        display.success("Predicted values")
 
     def __predcited_value(self, X, row_index, feature_column_names, model):
         row_probabilities = {}
@@ -260,7 +268,7 @@ class DataTable:
                     float_column_value = replacement_value if column_value is None else float(column_value)
                     row_probabilities[row_name] += column_theta * float_column_value
 
-            row_probabilities[row_name] = MLKit.LogisticRegression.predict(row_probabilities[row_name])
+            row_probabilities[row_name] = logistic_regression.LogisticRegression.predict(row_probabilities[row_name])
 
         sorted_row_probabilities = sorted(row_probabilities.items(), key=operator.itemgetter(1), reverse=True)
         return sorted_row_probabilities[0][0]
@@ -273,18 +281,18 @@ class DataTable:
             final_string += "\n" + str(index) + "," + str(value)
         
         if file_name is None:
-            MLKit.FileManager.save_string(final_string, self.file_name)
-            MLKit.Display.success("Saved csv file in " + self.file_name)
+            file_manager.save_string(final_string, self.file_name)
+            display.success("Saved csv file in " + self.file_name)
         else:
             if ".csv" in file_name:
-                MLKit.FileManager.save_string(final_string, file_name)
-                MLKit.Display.success("Saved csv file in " + file_name)
+                file_manager.save_string(final_string, file_name)
+                display.success("Saved csv file in " + file_name)
             else:
-                MLKit.FileManager.save_string(final_string, file_name + ".csv")
-                MLKit.Display.success("Saved csv file in " + file_name + ".csv")
+                file_manager.save_string(final_string, file_name + ".csv")
+                display.success("Saved csv file in " + file_name + ".csv")
 
     def display_attributes(self, from_index=0, to_index=-1):
-        """Display the calculated attributes."""
+        """display the calculated attributes."""
         columns = self.all_columns()
 
         if to_index < 0:
@@ -294,27 +302,27 @@ class DataTable:
 
         first_column_size = 10
         column_size = 20
-        attributes_name = MLKit.ColumnAttributes.all()
+        attributes_name = column_attributes.ColumnAttributes.all()
 
-        line_str = MLKit.Display.sized_str("", first_column_size)
+        line_str = display.sized_str("", first_column_size)
         for (index, column) in enumerate(columns):
             if not (from_index <= index < to_index):
                 continue
-            sized_str = MLKit.Display.sized_str(column.name + " ", column_size)
-            line_str += MLKit.Display.attributed_str(sized_str, [MLKit.Color.blue])
+            sized_str = display.sized_str(column.name + " ", column_size)
+            line_str += display.attributed_str(sized_str, [display.Color.blue])
 
         print("")
         print(line_str)
 
         # Line
         width = first_column_size + column_size * (to_index - from_index)
-        table_line = MLKit.Display.line_str(width - first_column_size - 1) + " "
-        sized_table_line = MLKit.Display.sized_str(table_line, width)
+        table_line = display.line_str(width - first_column_size - 1) + " "
+        sized_table_line = display.sized_str(table_line, width)
         print(sized_table_line)
 
         for attribute_name in attributes_name:
-            sized_str = MLKit.Display.sized_str(attribute_name + "|", first_column_size)
-            line_str = MLKit.Display.attributed_str(sized_str, [MLKit.Style.bold])
+            sized_str = display.sized_str(attribute_name + "|", first_column_size)
+            line_str = display.attributed_str(sized_str, [display.Style.bold])
 
             for (index, column) in enumerate(columns):
                 if not (from_index <= index < to_index):
@@ -323,15 +331,15 @@ class DataTable:
                 attribute_value = column.attributes.value_for_key(attribute_name)
                 if isinstance(attribute_value, float):
                     if abs(attribute_value) == float("inf"):
-                        line_str += MLKit.Display.sized_str("-", column_size)
+                        line_str += display.sized_str("-", column_size)
                     else:
-                        line_str += MLKit.Display.sized_str("%.6f|" % attribute_value, column_size)
+                        line_str += display.sized_str("%.6f|" % attribute_value, column_size)
                 elif isinstance(attribute_value, int):
-                    line_str += MLKit.Display.sized_str(str(attribute_value) + "|", column_size)
+                    line_str += display.sized_str(str(attribute_value) + "|", column_size)
                 elif isinstance(attribute_value, str):
-                    line_str += MLKit.Display.sized_str(attribute_value + "|", column_size)
+                    line_str += display.sized_str(attribute_value + "|", column_size)
                 else:
-                    line_str += MLKit.Display.sized_str("-|", column_size)
+                    line_str += display.sized_str("-|", column_size)
 
             print(line_str)
 
@@ -340,7 +348,7 @@ class DataTable:
         print("")
 
     def display_histogram(self, target_column, row_names, feature_names, scaled=False):
-        """Display an histogram for rows in columns."""
+        """display an histogram for rows in columns."""
         column_len = len(feature_names)
         n_columns = 4 if column_len > 4 else column_len
         n_rows = column_len / 4
@@ -356,7 +364,7 @@ class DataTable:
                 try:
                     data[row][column_name] = [x for x in data[row][column_name] if x is not None]
                 except KeyError:
-                    MLKit.Display.error("Value " + row + " doesn't exist in column " + target_column)
+                    display.error("Value " + row + " doesn't exist in column " + target_column)
 
                 if int(n_rows) == 1:
                     if column_len == 1:
@@ -386,11 +394,11 @@ class DataTable:
         csv_data.dropna(axis=0, how="any", inplace=True)
 
         if self.column_named(target_column_name) is None:
-            MLKit.Display.error("Column " + target_column_name + " doesn't exists.")
+            display.error("Column " + target_column_name + " doesn't exists.")
 
         for feature_name in feature_names:
             if self.column_named(feature_name) is None:
-                MLKit.Display.error("Column " + feature_name + " doesn't exists.")
+                display.error("Column " + feature_name + " doesn't exists.")
 
         sns.pairplot(csv_data, vars=feature_names, hue=target_column_name, diag_kind="hist", height=3)
         plt.show()

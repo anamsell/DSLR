@@ -1,6 +1,7 @@
-import MLKit
-import math
 import numpy as np
+from . import file_manager
+from . import display
+
 
 
 class LogisticRegression:
@@ -42,7 +43,7 @@ class LogisticRegression:
                 self.thetas_dict[row_name][feature] = float(thetas[row_index][feature_index + 1])
 
     def save(self, file_name):
-        MLKit.FileManager.save_model_data({**{"attributes": {"mean": self.mean, "std": self.std}}, **{"rows": self.thetas_dict}}, file_name)
+        file_manager.save_model_data({**{"attributes": {"mean": self.mean, "std": self.std}}, **{"rows": self.thetas_dict}}, file_name)
 
     @staticmethod
     def predict(x):
@@ -64,4 +65,4 @@ class LogisticRegression:
         try:
             return 1 / (1 + np.exp(-z))
         except FloatingPointError:
-            MLKit.Display.error("Learning rate is too large")
+            display.error("Learning rate is too large")
