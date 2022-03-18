@@ -1,13 +1,13 @@
 # DSLR
 DataScience x Logistic Regression - School 42 project
 
-## Goals:
+## Goals
 * Learn how to read a dataset, to visualize it in different ways, to select and clean unnecessary information from your data.
 * Implement one-vs-all logistic regression that will solve classification problem
 
 Look at subject.pdf for more information
 
-## Requirements:
+## Requirements
 * `Python 3`
 * `NumPy`
 * `Pandas`
