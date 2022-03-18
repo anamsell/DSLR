@@ -27,6 +27,8 @@ class DataTable:
         self.Y = None
         self.splitted_X = None
         self.splitted_Y = None
+        self.splitted_test_X = None
+        self.splitted_test_Y = None
 
         for (name, values) in columns_dict.items():
             col = column.Column(name, values)
@@ -161,7 +163,7 @@ class DataTable:
         if not 1 >= learning_rate > 0:
             display.error("Learning rate should be greater than 0 and smaller than 1.")
 
-        if accuracy_split is not None and (accuracy_split <= 0 or accuracy_split >= 1):
+        if accuracy_split is not None and (accuracy_split < 0.01 or accuracy_split > 0.99):
             display.error("Accuracy split should be greater than 0 and smaller than 1.")
 
         if self.column_named(target_column_name) is None:
@@ -190,10 +192,6 @@ class DataTable:
 
         self.X = united_values[:, :-1].astype('float').T
         self.Y = united_values[:, -1:].reshape(len(X))
-        self.splitted_X = None
-        self.splitted_Y = None
-        self.splited_test_X = None
-        self.splited_test_Y = None
 
         if accuracy_split is None:
             regression = logistic_regression.LogisticRegression(learning_rate)
@@ -206,32 +204,32 @@ class DataTable:
         else:
             self.splitted_X = self.X[:, :int(self.X.shape[1] * accuracy_split)]
             self.splitted_Y = self.Y[:int(self.Y.shape[0] * accuracy_split)]
-            self.splited_test_X = self.X[:, int(self.X.shape[1] * accuracy_split):]
-            self.splited_test_Y = self.Y[int(self.Y.shape[0] * accuracy_split):]
+            self.splitted_test_X = self.X[:, int(self.X.shape[1] * accuracy_split):]
+            self.splitted_test_Y = self.Y[int(self.Y.shape[0] * accuracy_split):]
             regression = logistic_regression.LogisticRegression(learning_rate)
             for index, val in enumerate(features_column_names):
-                regression.mean[val] = np.mean(self.splited_test_X[index])
-                regression.std[val] = np.std(self.splited_test_X[index])
+                regression.mean[val] = np.mean(self.splitted_test_X[index])
+                regression.std[val] = np.std(self.splitted_test_X[index])
                 self.splitted_X[index] = (self.splitted_X[index] - regression.mean[val]) / regression.std[val]
-                self.splited_test_X[index] = (self.splited_test_X[index] - regression.mean[val]) / regression.std[val]
+                self.splitted_test_X[index] = (self.splitted_test_X[index] - regression.mean[val]) / regression.std[val]
             regression.fit(self.splitted_X, self.splitted_Y, feature_names)
             regression.save(file_name)
 
         display.success("model saved as " + file_name + ".mlmodel")
     
     def accuracy(self, model_file_name):
-        if self.splitted_X is None or self.splitted_Y is None or self.splited_test_X is None or self.splited_test_Y is None:
+        if self.splitted_X is None or self.splitted_Y is None or self.splitted_test_X is None or self.splitted_test_Y is None:
             display.error("Use -a to get the model accuracy.")
         
         model = file_manager.get_model_data(model_file_name + ".mlmodel")
         feature_column_names = list(model["rows"][list(model["rows"].keys())[0]].keys())
         predicted_values = []
 
-        for row_index in range(self.splited_test_Y.shape[0]):
-            predicted_value = self.__predcited_value(self.splited_test_X, row_index, feature_column_names, model)
+        for row_index in range(self.splitted_test_Y.shape[0]):
+            predicted_value = self.__predcited_value(self.splitted_test_X, row_index, feature_column_names, model)
             predicted_values.append(predicted_value)
 
-        accuracy = accuracy_score(self.splited_test_Y, predicted_values)
+        accuracy = accuracy_score(self.splitted_test_Y, predicted_values)
         print("Accuracy:", accuracy)
 
     def predict(self, target_column_name, model):
