@@ -38,14 +38,14 @@ Accuracy with standard parameters is `0.99`
 
 ## Commands
 
-###Example
+### Example
 
 ```
 python3 .\log_reg_train.py .\dataset\dataset_train.csv
 python3 .\log_reg_predict.py .\dataset\dataset_test.csv
 python3 .\log_reg_train.py .\dataset\dataset_train.csv -a 0.9
 ```
-###Display Usage
+### Display Usage
 ```
 python3 .\log_reg_train.py
 python3 .\log_reg_train.py
