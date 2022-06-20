@@ -18,7 +18,7 @@ Look at subject.pdf for more information
 ## Setup
 
 ```
-git clone https://github.com/Gleonett/DSLR.git
+git clone https://github.com/anamsell/DSLR.git DSLR
 cd DSLR
 pip3 install -r requirements.txt
 ```
